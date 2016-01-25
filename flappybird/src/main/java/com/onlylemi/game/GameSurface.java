@@ -2,7 +2,10 @@ package com.onlylemi.game;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -10,7 +13,9 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import com.onlylemi.game.layer.Background;
+import com.onlylemi.game.layer.Barrier;
 import com.onlylemi.game.layer.Player;
+import com.onlylemi.game.layer.Score;
 import com.onlylemi.game.layer.Start;
 import com.onlylemi.utils.Constants;
 
@@ -38,6 +43,10 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback, 
     private Background background; //背景
     private Player player; //主角
     private Start start; //开始
+    private Barrier barrier; // 障碍
+    private Score score; // 成绩
+
+    private int scoreMax; // 最高的成绩
 
     public GameSurface(Context context) {
         super(context);
@@ -57,8 +66,13 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback, 
         holder.addCallback(this);
         setKeepScreenOn(true);
 
+        holder.setFormat(PixelFormat.TRANSPARENT);
+        setZOrderOnTop(true);
+
         paint = new Paint();
         paint.setAntiAlias(true);
+
+        scoreMax = 0;
     }
 
     /**
@@ -70,6 +84,10 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback, 
         background = new Background(this);
         player = new Player(this);
         start = new Start(this);
+        barrier = new Barrier(this);
+        score = new Score(this);
+
+        score.setScoreMax(scoreMax);
     }
 
     @Override
@@ -98,18 +116,23 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback, 
      * @param canvas
      */
     private void myDraw(Canvas canvas) {
-        background.draw(canvas, paint);
+        //background.draw(canvas, paint);
+        // 清屏
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
 
         switch (gameState) {
             case Constants.GAME_START:
                 player.draw(canvas, paint);
                 start.draw(canvas, paint);
+                score.draw(canvas, paint);
                 break;
             case Constants.GAMING:
                 player.draw(canvas, paint);
+                barrier.draw(canvas, paint);
+                score.draw(canvas, paint);
                 break;
             case Constants.GAME_END:
-
+                player.draw(canvas, paint);
                 break;
             default:
                 break;
@@ -126,9 +149,14 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback, 
                 break;
             case Constants.GAMING:
                 player.logic();
+                barrier.setPlayerX(player.getPlayerX());
+                barrier.setPlayerY(player.getPlayerX());
+                barrier.setRadius(player.getRadius());
+                barrier.logic();
+                score.logic();
                 break;
             case Constants.GAME_END:
-
+                initGame();
                 break;
             default:
                 break;
@@ -188,5 +216,9 @@ public class GameSurface extends SurfaceView implements SurfaceHolder.Callback, 
 
     public void setGameState(int gameState) {
         this.gameState = gameState;
+    }
+
+    public void setScoreMax(int scoreMax) {
+        this.scoreMax = scoreMax;
     }
 }
